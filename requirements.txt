@@ -1,0 +1,10 @@
+# Lab 2 dependencies. Tested on Python 3.12.
+#
+# numpy and scipy carry the calibration maths; opencv-python carries the
+# chessboard and ArUco scripts; the xarm SDK is imported lazily inside
+# robot.py, so every script except the live-robot ones runs without it.
+
+numpy>=1.26
+scipy>=1.11
+opencv-python==4.13.0.92
+xarm-python-sdk==1.17.3

@@ -1,0 +1,12 @@
+*.npy
+*.npz
+*.venv
+*.png
+*.jpg
+__*__
+*.pdf
+reference/
+reference/*
+*procedures*
+*worksheet*
+
