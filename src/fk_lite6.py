@@ -93,3 +93,10 @@ def unit_of(name):
         if name.startswith(prefix):
             return unit
     raise ValueError("not a zeta parameter name: %r" % (name,))
+
+if __name__ == "__main__":
+    # Section 6.1(a): at q = 0 the flange stands at (87.0, 0.0, 154.2) mm.
+    # Nothing later in the laboratory is meaningful until this prints them.
+    q_deg = np.zeros(6)
+    xyz = np.round(fk_from_zeta(np.deg2rad(q_deg), C.build_zeta_nominal())[:3, 3], 1) + 0.0
+    print("q = 0 flange (mm): (%.1f, %.1f, %.1f)" % tuple(xyz))

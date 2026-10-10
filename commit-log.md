@@ -1,3 +1,12 @@
+# v1.1 - Corrections to v3, theory fixes
+## 10 Oct 2026
+- Removed set mode and state lines from robot.py
+- camera calibration script crash fixed
+- fk_lite6 now can be run standalone
+- observability.py fixed
+    - Rotation error was wrong
+    - Position error was also mistaken. Fixed both
+   
 # v1 - First commit
 ## 9 Oct 2026
 ### Working lab 2 code 

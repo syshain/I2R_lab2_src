@@ -66,6 +66,9 @@ def main(path=None):
 
     try:
         capture_loop(detector, on_capture, window="Collect hand-eye data")
+    except RuntimeError as exc:
+        progress("capture ended early: %s" % exc)
+        progress("saving the %d pose(s) captured so far" % len(records))
     finally:
         detector.close()
         disconnect(arm)

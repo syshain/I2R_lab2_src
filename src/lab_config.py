@@ -46,10 +46,10 @@ DETECT_REPROJ_REJECT_PX = 15.0
 # They are the artifact frame W's own axes, drawn from its origin.
 AXES_LENGTH_MM = 20.0
 
-# collect_data.py stops counting at this many poses and refuses a shorter set:
-# Task 2 asks for thirty, and Section 6.4 needs them (30 poses = 180 equations
-# for 30 unknowns). Task 4 has its own, smaller, counts below.
-CAPTURE_MIN_POSES = 30
+# The fewest poses collect_data.py will write: a pair may stop at 20 (Section
+# 6.4 asks for thirty but the GTA rule allows a stop at 20), so a set of 20 or
+# more is saved and a shorter one is refused. Task 4 has its own counts below.
+CAPTURE_MIN_POSES = 20
 
 # Run the calibration on only the first MAX_POSES of the saved set. 0 = all of
 # them. Extension 3.1 sets this to 15; it overwrites data/calibration_results.*,
@@ -129,7 +129,7 @@ def build_zeta_nominal(n=N_DOF):
     return np.concatenate([a, alpha, d, theta_off])
 
 
-# DH parameters held at nominal during Stage 2 (Sicilia partial-model
+# DH parameters held at nominal during Stage 2 (Siciliano partial-model
 # calibration): these are unidentifiable once T_6_C is free. Names are
 # dh_param_names() indices; see run_stages.py.
 LOCKED_TABLE_NAMES = ['a1', 'alpha1', 'd1', 'theta1',

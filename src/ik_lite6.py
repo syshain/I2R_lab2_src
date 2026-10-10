@@ -201,10 +201,11 @@ if __name__ == "__main__":
         field("round trip", "%.2e mm from the target"
               % np.linalg.norm(res["T"][:3, 3] - pose[:3]))
         if not res["success"]:
+            field("settled at", "pos %8.3f %8.3f %8.3f mm" % tuple(res["T"][:3, 3]))
             progress("NOT CONVERGED: the damping ceiling was reached, so the")
             progress("residual settled on the nearest pose this start can get to,")
-            progress("not on the target. Read off the flange position it settled")
-            progress("on: that is what Table 2 asks you to record.")
+            progress("not on the target. The flange position above is what")
+            progress("Table 2 asks you to record.")
     else:
         # Task 1(c): build a target out of a set of joint readings with the FK,
         # then stand the residual at those same readings. A correct residual is

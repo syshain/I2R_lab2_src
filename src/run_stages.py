@@ -5,7 +5,7 @@ The model each stage fits is written out immediately below.
 
 #     Stage 1  T_6_C only, against FK of the nominal DH table.
 #     Stage F  T_6_C only, against the controller's own T_0_6 for the same joint angles.
-#     Stage 2  T_6_C plus 16 free DH parameters, Sicilia's eight locked at nominal,
+#     Stage 2  T_6_C plus 16 free DH parameters, Siciliano's eight locked at nominal,
 #              seeded from Stage 1.
 
 from dataclasses import dataclass, field
@@ -25,7 +25,7 @@ from lm_optimizer import levenberg_marquardt
 TITLES = {
     'stage1': 'STAGE 1 - HAND-EYE AGAINST NOMINAL KINEMATICS',
     'stagef': 'STAGE F - HAND-EYE AGAINST THE CONTROLLER FK',
-    'stage2': 'STAGE 2 - PARTIAL-MODEL DH + HAND-EYE (SICILIA)',
+    'stage2': 'STAGE 2 - PARTIAL-MODEL DH + HAND-EYE (SICILIANO)',
 }
 
 
@@ -69,7 +69,7 @@ def run_stage2(Q, TCW_list, zeta_nominal, w_rows, n=6, locked=None,
                t6c_seed=None, verbose=True):
     """Hand-eye plus DH with a lock list: 16 DH + 6 hand-eye, or all 30 if locked=[].
 
-    locked defaults to lab_config.LOCKED_TABLE_NAMES, Sicilia's eight.
+    locked defaults to lab_config.LOCKED_TABLE_NAMES, Siciliano's eight.
     """
 
     zeta0 = np.asarray(zeta_nominal, dtype=float).copy()

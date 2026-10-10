@@ -2,7 +2,7 @@
 
 The Jacobian J = dr/dxi is built twice at the point Stage 2 starts from --
 nominal DH and the two-pose hand-eye seed -- once with all 30 parameters free
-and once with Sicilia's eight locked at nominal, which is exactly the basis
+and once with Siciliano's eight locked at nominal, which is exactly the basis
 Stage 2 optimises in. Every singular value is printed divided by the largest,
 because the unidentifiable directions are small rather than literally zero.
 

@@ -44,7 +44,7 @@ def object_points():
 def calibrate(objp, image_points, image_size):
     """(K, dist, rms, rvecs, tvecs); CALIB_FIX_K3 stops k3 chasing noise."""
     rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(
-        [objp], image_points, image_size, None, np.zeros((5, 1)),
+        [objp] * len(image_points), image_points, image_size, None, np.zeros((5, 1)),
         flags=cv2.CALIB_FIX_K3)
     return K, np.asarray(dist, dtype=float).ravel(), float(rms), rvecs, tvecs
 

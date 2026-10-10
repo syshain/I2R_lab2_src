@@ -9,15 +9,16 @@ import lab_config as C
 
 
 def connect(ip=None):
-    """Connect, clear any error, put the arm in position mode -> the XArmAPI handle."""
+    """Connect and clear any error -> the XArmAPI handle; the mode is left alone.
+
+    Section 6.3 has the pair turn Manual Mode on in UFactory Studio and then
+    run collect_data.py. motion_enable(True) or set_mode(0) here would drop the
+    arm back into position mode, and the pair could no longer move it by hand.
+    """
     from xarm.wrapper import XArmAPI
 
     arm = XArmAPI(ip or C.ROBOT_IP, is_radian=True, print_error=False)
-    arm.set_state(state=0)
     arm.clean_error()
-    arm.motion_enable(enable=True)
-    arm.set_mode(0)
-    arm.set_state(state=0)
     return arm
 
 

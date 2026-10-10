@@ -39,7 +39,7 @@ xi = [zeta | t6c] = [a1..a6, α1..α6, d1..d6, θ_off1..θ_off6, px, py, pz, ωx
 | Baseline | none — nominal DH, `T_6_C = I` | nominal DH | The score everything improves on |
 | Stage 1 — hand-eye against nominal kinematics | `T_6_C` (6) | nominal DH FK | Same problem as Lab 1; well posed, no regularisation |
 | Stage F — hand-eye against the controller FK | `T_6_C` (6) | the controller's own `T_0_6` | The controller is factory-calibrated, so this isolates the hand-eye term from DH error. Needs `robot_pose_raw` in the capture; scored both through the controller FK it was fitted in and through nominal DH |
-| Stage 2 — partial-model DH + hand-eye (Sicilia) | 16 DH + 6 hand-eye (22) | DH being fitted | Eight parameters locked at nominal (`a1, α1, d1, θ1, d6, d2, d3, θ6` — unidentifiable once `T_6_C` is free), weak L2 pull toward nominal, seeded from Stage 1's `T_6_C` |
+| Stage 2 — partial-model DH + hand-eye (Siciliano) | 16 DH + 6 hand-eye (22) | DH being fitted | Eight parameters locked at nominal (`a1, α1, d1, θ1, d6, d2, d3, θ6` — unidentifiable once `T_6_C` is free), weak L2 pull toward nominal, seeded from Stage 1's `T_6_C` |
 
 Every candidate is scored by `s_max` — the maximum over X/Y/Z of the per-axis standard deviation of the reconstructed `T_0_W` translation across poses — graded `EXCELLENT < 5 mm`, `GOOD < 10 mm`, `ACCEPTABLE < 20 mm`. `s_max` is self-consistency, not accuracy: any constant error in the chain is invisible to it, which is why validation happens on a *relocated* artifact.
 
@@ -50,7 +50,7 @@ Lab_2/
 ├── src/          # Active Python code. One flat directory of single-responsibility scripts.
 ├── data/         # Calibration artifacts (.npy/.npz/.json/.txt) + captured images. Ships with aruco_config.json and an empty calib_images/; everything else is produced at runtime.
 ├── docs/         # This structure guide.
-└── requirements.text
+├── requirements.txt
 └── commit-log.md # Human readable version history
 ```
 Rules that make the template portable across labs:
@@ -69,7 +69,7 @@ The pipeline scripts run in order; each reads the previous stage's output from `
 | `collect_data.py` | Live capture loop: the arm is hand-guided (manual mode), SPACE records one pose — joint angles, the controller's flange pose and `T_C_W` stored together; poses over the reprojection limit are refused. | `calibration_data.npy` |
 | `run_calibration.py` | **Three-stage entry point**: baseline, our-FK-vs-controller model-disagreement table, Stage 1, Stage F, Stage 2, comparison table and each stage's % cut in Stage 1's `s_max`. No robot connection, so a capture re-runs freely. | `calibration_results.npy`, `calibration_results.json`, `calibration_results.txt` |
 | `validate_calibration.py` | Live validation at a *relocated* artifact: captures 8–12 fresh poses, checks the artifact really moved, then scores every calibration in `calibration_results.npy` (Baseline / Stage 1 / Stage F / Stage 2) on poses none of them saw. Nothing is refitted. | `validation_data.npy`, `validation_results.npy`, `validation_results.txt` |
-| `observability.py` | Task 3, standalone: SVD of the Jacobian at the point Stage 2 starts from — all 30 parameters free vs Sicilia's eight locked — printing every singular value divided by the largest, since the unidentifiable directions are small rather than zero. | *(none — console only)* |
+| `observability.py` | Task 3, standalone: SVD of the Jacobian at the point Stage 2 starts from — all 30 parameters free vs Siciliano's eight locked — printing every singular value divided by the largest, since the unidentifiable directions are small rather than zero. | *(none — console only)* |
 | `ik_lite6.py` | Part A: numerical inverse kinematics (damped LM through an SVD) against `fk_lite6`, in the units the controller displays (mm, degrees). **The exercise file: it ships with two `<TO_FILL>` markers inside `ik_residual`, deliberately not valid Python — the script will not run until you have replaced both.** The residual counts one millimetre and one degree the same; that equality is the whole reason the weighting is what it is. | *(none — library module + runnable CLI)* |
 
 Shared modules (imported, never run):
@@ -97,18 +97,13 @@ Stage F is skipped with a clear message when a capture was recorded without cont
 Internal maths and all stored transforms use **millimetres + degrees on disk**, matching the Lab 1 capture format: joint angles and the controller's `[x, y, z, roll, pitch, yaw]` reading are stored in degrees, every translation in millimetres. Inside the code everything is radians: `calibration_io` converts the joints deg→rad once at load, `robot.py` opens the SDK with `is_radian=True`, and `collect_data.py` converts back to degrees for storage. `units.py` is the crossing point, and names in `lab_config.py` carry a `RAD` suffix when a value is not in the default units.
 
 ## How to run
-Create a virtual environment in the main directory as follows
-```bash
-python3 -m venv .venv
-```
-Activate the virtual environment
-```bash
-source .venv/bin/activate
-```
-The command line should now have `(.venv)` preceding the prompt. If running the code for the first time, install all required Python libraries with the following command
-```bash
+Create a virtual environment in the main directory, activate it and install the libraries (Section 1.3):
+```bat
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
+The command line should now have `(.venv)` preceding the prompt.
 Once the pip installer finishes, the code is ready to run.
 Open `lab_config.py` and ensure the config parameters are correct. `ROBOT_IP` is found on the control box of the robot (it and `CAMERA_INDEX` can also be exported as environment variables on the bench).
 
@@ -116,6 +111,7 @@ Part A needs neither robot nor camera. Fill the two `<TO_FILL>` markers in `ik_l
 ```bat
 python.exe src\ik_lite6.py                                  # residual self-check
 python.exe src\ik_lite6.py X Y Z R P Y                      # solve one pose (mm, degrees)
+python.exe src\ik_lite6.py X Y Z R P Y q1 q2 q3 q4 q5 q6    # the same pose, started from these joint angles (degrees)
 ```
 
 Run the Part B stages in order from the repository root (capture frames, estimate intrinsics, record pose pairs, fit all stages offline, then validate — the scripts resolve `data/` themselves, so no need to change directory):

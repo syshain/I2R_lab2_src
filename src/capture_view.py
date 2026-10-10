@@ -81,6 +81,8 @@ def capture_loop(detector, on_capture, max_poses=None, window="Capture",
                 note, note_ok = "artifact not found, nothing captured", False
             else:
                 note, note_ok = on_capture(detection)
+                if note_ok:
+                    accepted += 1
 
     cv2.destroyWindow(window)
     return accepted

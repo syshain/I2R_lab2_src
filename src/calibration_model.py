@@ -7,7 +7,7 @@ import numpy as np
 
 import lab_config as C
 from fk_lite6 import fk_from_zeta
-from so3 import t6c_from_vec, vec_from_transform
+from so3 import rotation_log_map, t6c_from_vec, vec_from_transform
 
 
 def predict_all_T0W(Q, TCW_list, xi, n=6):
@@ -33,13 +33,26 @@ def predict_all_T0W_from_flange(T_0_6_all, TCW_list, t6c_vec):
     return np.asarray(T_0_6_all, dtype=float) @ T_6_W
 
 
-def T0W_as_vectors(T0W):
-    """(l, 4, 4) transforms -> (l, 6) vectors [pos mm, axis-angle rad]."""
+def consistency_residual(T0W):
+    """(l, 4, 4) T_0_W -> stacked residual (6l), pose 0 as the reference.
+
+    Block i is the relative transform T_0_W[0]^-1 T_0_W[i]: its translation
+    R_0^T (p_i - p_0) in mm and the rotation vector of R_0^T R_i in rad, so
+    block 0 is identically zero. Both halves are taken in the reference frame,
+    which is what makes the whole residual invariant to a common rigid motion
+    of base and artifact (Section 6.4, first group); a bare p_0 - p_i is not
+    invariant to that motion's rotation. Section 5.2 prescribes the rotation
+    vector of the relative rotation: it vanishes exactly when two orientations
+    agree, which the difference of two axis-angle vectors does not.
+    """
     l = T0W.shape[0]
-    V = np.empty((l, 6))
+    p0 = T0W[0, :3, 3]
+    R0 = T0W[0, :3, :3]
+    r = np.empty((l, 6))
     for i in range(l):
-        V[i] = vec_from_transform(T0W[i])
-    return V
+        r[i, :3] = R0.T @ (T0W[i, :3, 3] - p0)
+        r[i, 3:] = rotation_log_map(R0.T @ T0W[i, :3, :3])
+    return r.flatten()
 
 
 def hand_eye_residuals_and_jacobian(t6c_vec, T_0_6_all, TCW_list, eps=C.FD_EPS):
@@ -48,18 +61,14 @@ def hand_eye_residuals_and_jacobian(t6c_vec, T_0_6_all, TCW_list, eps=C.FD_EPS):
     Returns (r, J) with r length 6*l and J (6*l, 6); J = -dr/dt6c.
     """
 
-    l = len(TCW_list)
-    V_cur = T0W_as_vectors(predict_all_T0W_from_flange(T_0_6_all, TCW_list, t6c_vec))
-    V_ref = V_cur[0]
+    r = consistency_residual(predict_all_T0W_from_flange(T_0_6_all, TCW_list, t6c_vec))
 
-    r = (V_ref - V_cur).flatten()
-
-    J = np.zeros((l * 6, 6))
+    J = np.zeros((len(TCW_list) * 6, 6))
     for j in range(6):
         xp = t6c_vec.copy()
         xp[j] += eps
-        Vp = T0W_as_vectors(predict_all_T0W_from_flange(T_0_6_all, TCW_list, xp))
-        J[:, j] = ((Vp - Vp[0]) - (V_cur - V_ref)).flatten() / eps
+        rp = consistency_residual(predict_all_T0W_from_flange(T_0_6_all, TCW_list, xp))
+        J[:, j] = -(rp - r) / eps
     return r, J
 
 
@@ -69,20 +78,14 @@ def compute_residuals_and_jacobian(xi, Q, TCW_list, n=6, eps=C.FD_EPS):
     (r, J): r length 6*l with block 0 identically zero, J = -dr/dxi.
     """
 
-    l = Q.shape[0]
-    np_params = len(xi)
+    r = consistency_residual(predict_all_T0W(Q, TCW_list, xi, n))
 
-    V_cur = T0W_as_vectors(predict_all_T0W(Q, TCW_list, xi, n))
-    V_ref = V_cur[0]
-
-    r = (V_ref - V_cur).flatten()
-
-    J = np.zeros((l * 6, np_params))
-    for j in range(np_params):
+    J = np.zeros((Q.shape[0] * 6, len(xi)))
+    for j in range(len(xi)):
         xp = xi.copy()
         xp[j] += eps
-        Vp = T0W_as_vectors(predict_all_T0W(Q, TCW_list, xp, n))
-        J[:, j] = (Vp - Vp[0] - (V_cur - V_ref)).flatten() / eps
+        rp = consistency_residual(predict_all_T0W(Q, TCW_list, xp, n))
+        J[:, j] = -(rp - r) / eps
     return r, J
 
 
