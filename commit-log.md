@@ -1,3 +1,7 @@
+# v1.2 - Requirements Corrections
+## 11 Oct 2026
+- Corrected requirements.txt to include precise module versions
+
 # v1.1 - Corrections to v3, theory fixes
 ## 10 Oct 2026
 - Removed set mode and state lines from robot.py
