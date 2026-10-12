@@ -12,7 +12,7 @@ import numpy as np
 # =============================================================================
 
 ROBOT_IP = os.environ.get("ROBOT_IP", "192.168.1.158")
-CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "1"))
+CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
 FRAME_WIDTH = 1920
 FRAME_HEIGHT = 1080
 
@@ -27,10 +27,7 @@ ARUCO_DICT_NAME = "DICT_6X6_250"
 ARUCO_MARKER_IDS = [0, 2, 3, 4, 5]   # checked against aruco_config.json at load
 
 # Corner-order shift applied ONCE to each marker's model corners, as
-# np.roll(corners, -roll), so model corner j sits at ArUco corner j. All zero
-# reproduces the geometry every dataset so far was collected under. A cyclic
-# shift of a near-square corner set barely moves the reprojection error, so
-# decide these by measuring the printed board, not by the fit.
+# np.roll(corners, -roll). All zero matches every dataset collected so far.
 CORNER_ROLL = {mid: 0 for mid in ARUCO_MARKER_IDS}
 
 # Sub-pixel corner refinement before the pose is solved. Costs a few ms per
@@ -47,8 +44,7 @@ DETECT_REPROJ_REJECT_PX = 15.0
 AXES_LENGTH_MM = 20.0
 
 # The fewest poses collect_data.py will write: a pair may stop at 20 (Section
-# 6.4 asks for thirty but the GTA rule allows a stop at 20), so a set of 20 or
-# more is saved and a shorter one is refused. Task 4 has its own counts below.
+# 6.4), so a set of 20 or more is saved and a shorter one is refused.
 CAPTURE_MIN_POSES = 20
 
 # Run the calibration on only the first MAX_POSES of the saved set. 0 = all of
@@ -56,31 +52,23 @@ CAPTURE_MIN_POSES = 20
 # which Task 4 then validates, so set it back to 0 afterwards.
 MAX_POSES = 0
 
-# observability.py calls a singular value "at zero" below this fraction of the
-# largest one. A collapsed direction sits within the finite-difference noise
-# (FD_EPS rounds to ~1e-8 relative), a real one sits orders above it, so the
-# exact cut inside that gap changes nothing.
-OBSERVABILITY_ZERO_REL = 1e-6
-
-
 # =============================================================================
 # CHESSBOARD  -- Task 2, camera_calibration.py; images go in data/calib_images
 # =============================================================================
 #
-# Only the INNER corners are counted: a board of 11 x 8 printed squares has a
-# 10 x 7 grid of inner corners, so counting corners is the one way not to be a
-# square out. Measure the squares with the ruler before calibrating -- a scale
-# error in SQUARE_SIZE_MM goes straight into fx and fy and nothing downstream
-# can detect it.
+# INNER corners only. Measure SQUARE_SIZE_MM with a ruler before calibrating:
+# a scale error there goes straight into fx and fy undetected.
 
 CHESSBOARD_SIZE = (10, 7)
 SQUARE_SIZE_MM = 15.0
 CALIB_IMAGE_PATTERN = "calib_*.png"   # image_capture.py writes these into...
 CALIB_IMAGE_FOLDER = "calib_images"   # ... data/calib_images, not data/ itself
-CAM_CALIB_MIN_GOOD_IMAGES = 15        # handout section 6.3 asks for fifteen
+CAM_CALIB_MIN_GOOD_IMAGES = 15        # handout section 6.3
 
-CAM_CALIB_RMS_GOOD_TARGET_PX = 0.5    # aim below this, per the handout
-CAM_CALIB_RMS_RECAPTURE_PX = 1.0      # above this, take more views
+# Handout section 6.3 thresholds, kept for reference; the judgement is the
+# student's.
+CAM_CALIB_RMS_GOOD_TARGET_PX = 0.5
+CAM_CALIB_RMS_RECAPTURE_PX = 1.0
 
 
 # =============================================================================
@@ -99,10 +87,6 @@ CAM_CALIB_RMS_RECAPTURE_PX = 1.0      # above this, take more views
 # Craig convention (NOT classic Denavit-Hartenberg): the parameters attach to
 # frame i-1 and the joint motion is the final theta term. Feeding these to a
 # classic-DH routine pairs every a with the wrong alpha.
-#
-# Joint 3 is d3 = 0, a3 = 200, alpha3 = 180, matching the Lab 1 MATLAB
-# reference; an earlier draft of this file carried d3 = 180 as well, which
-# double-counted the upper-arm length.
 
 DH_NOMINAL_RAW = [
     [0.0,  243.3,   0.0,   0.0],    # joint 1
@@ -129,9 +113,8 @@ def build_zeta_nominal(n=N_DOF):
     return np.concatenate([a, alpha, d, theta_off])
 
 
-# DH parameters held at nominal during Stage 2 (Siciliano partial-model
-# calibration): these are unidentifiable once T_6_C is free. Names are
-# dh_param_names() indices; see run_stages.py.
+# DH parameters held at nominal during Stage 2. Names are dh_param_names()
+# indices; see run_stages.py and observability.py.
 LOCKED_TABLE_NAMES = ['a1', 'alpha1', 'd1', 'theta1',
                       'd6', 'd2', 'd3', 'theta6']
 
@@ -141,9 +124,8 @@ LOCKED_TABLE_NAMES = ['a1', 'alpha1', 'd1', 'theta1',
 # =============================================================================
 #
 # Everything in this section is in degrees and millimetres, the units the
-# controller and UFactory Studio display. q = [J1..J6] in degrees, and the
-# residual is [position error in mm; orientation error in degrees], so one
-# millimetre and one degree count the same, as Section 5.2 explains.
+# controller and UFactory Studio display. The IK residual is
+# [position error in mm; orientation error in degrees] (handout section 5.2).
 
 # The target flange pose: position mm, then roll, pitch and yaw in degrees in
 # the convention UFactory Studio displays. Task 1(g) changes the position to
@@ -172,7 +154,7 @@ START_GUESSES = [
 JOINT_LIMITS_DEG = np.array([[80.0, 270.0],
                              [-150.0, 150.0],
                              [-3.5, 300.0],
-                             [-180.0, 180.0],
+                             [-360.0, 360.0],
                              [-124.0, 124.0],
                              [-180.0, 180.0]])
 
@@ -250,19 +232,7 @@ STAGE1_SVD_THRESH = 0.0    # no observability mask
 STAGE2_MAX_ITER = 300
 STAGE2_REG_WEIGHT = 1e-4   # weak L2 pull to nominal on 22 loose parameters
 STAGE2_SVD_THRESH = 0.0
-
-
-# =============================================================================
-# QUALITY BANDS for s_max = max per-axis std dev of T_0_W position, mm
-# =============================================================================
-#
-# A bolted-down artifact must predict the same base-frame point from every
-# pose, so a small s_max means the fit is internally consistent. It says
-# nothing about accuracy against the real world. Bands mirror Lab 1.
-
-S_MAX_EXCELLENT_MM = 5.0
-S_MAX_GOOD_MM = 10.0
-S_MAX_ACCEPTABLE_MM = 20.0
+OBSERVABILITY_ZERO_REL = 1e-6
 
 
 # =============================================================================

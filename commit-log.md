@@ -1,3 +1,11 @@
+# v1.3 - Dry run fixes
+## 12 Oct 2026
+- Changed ik_lite self-check to a more robust verification
+- capture_view.py more robust to pc-dependencies
+- lab_config.py now includes the updated joint angle limits
+- observability.py now displays largest contributers to decomposed directions along with relative eigenvalues
+    - Fixes dh parameters name sorting issue
+
 # v1.2 - Requirements Corrections
 ## 11 Oct 2026
 - Corrected requirements.txt to include precise module versions

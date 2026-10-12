@@ -1,17 +1,15 @@
 """Task 1: numerical inverse kinematics for the Lite 6, against fk_lite6.
 
-Everything here is in the units the controller displays: joint angles, roll,
-pitch and yaw in degrees, positions in millimetres. The residual therefore
-counts one millimetre and one degree the same, as Section 5.2 of the handout
-does; 
+Units are the ones the controller displays: angles in degrees, positions in
+millimetres (handout section 5.2).
 
-    python.exe ik_lite6.py                 the residual self-check of Task 1(c)
-    python.exe ik_lite6.py X Y Z R P Y     solve one pose (mm, degrees) from rest
-    python.exe ik_lite6.py X Y Z R P Y q1 ... q6
-                        the same solve from a starting guess, inside the joint
-                        box: one Table 1 row per run. Guesses that settle on
-                        the same joint vector found the same solution.
+    python3 ik_lite6.py                 the residual self-check of Task 1(c)
+    python3 ik_lite6.py X Y Z R P Y     solve one pose (mm, degrees) from rest
+    python3 ik_lite6.py X Y Z R P Y q1 ... q6
+                        solve from a starting guess, inside the joint box
 
+The solver is a damped Levenberg-Marquardt loop through an SVD. The part you
+write is ik_residual below.
 """
 
 import sys
@@ -25,8 +23,7 @@ from reporting import banner, field, progress
 from so3 import rotation_vector
 from units import euler_deg_from_matrix, transform_from_pose_deg
 
-# The DH table the FK runs on. Fixed for this task; Task 3 shows why it needs
-# correcting, and it is not this script's job to correct it.
+# The DH table the FK runs on, nominal.
 ZETA_NOMINAL = build_zeta_nominal(6)
 
 
@@ -38,16 +35,13 @@ def ik_residual(q_deg, T_target):
     """The 6-row residual e(q) = [position error in mm; orientation error in deg].
 
     q_deg is the joint vector in degrees, T_target the 4x4 flange target.
-    Both errors are the difference between where the arm is and where you
-    want it; q_deg and the answer are in degrees, positions in millimetres.
     """
     T_cur = fk_from_zeta(np.deg2rad(q_deg), ZETA_NOMINAL)
 
-    # --- 1. Position: the mm error per axis, from the two 4x4 matrices -----
+    # --- 1. Position: where the arm is, minus where you want it, in mm ------
     e_pos = <TO_FILL>
 
-    # --- 2. Orientation: R_err rotates the arm's current orientation onto
-    #     the target's (handout section 5.2); its rotation vector is e_ori.
+    # --- 2. Orientation: the rotation that separates the two orientations ---
     R_err = <TO_FILL>
     e_ori = rotation_vector(R_err)
 
@@ -189,40 +183,41 @@ if __name__ == "__main__":
         field("target", "pos=%8.3f %8.3f %8.3f mm   rpy=%7.3f %7.3f %7.3f deg"
               % (*pose[:3], *euler_deg_from_matrix(transform_from_pose_deg(pose)[:3, :3])))
         if q0 is None:
-            progress("from rest with the joints free, as Task 1(c) has it; add")
-            progress("q1..q6 after the pose to run a Table 1 row inside the box.")
-        # The bare pose run is the Task 1(c) solver demo: joints free, exactly
-        # as the file shipped. Passing a guess makes it a Table 1 row, where a
-        # solution outside the joint box would not be a solution at all.
+            progress("from rest, joints free; append q1..q6 to solve inside the box.")
         res = solve_ik(pose, q0_deg=q0,
                        joint_limits_deg=None if q0 is None else JOINT_LIMITS_DEG)
-        # FK of the answer must land back on the target: that round trip is the
-        # check, done against the same FK the calibration uses.
+        # FK of the answer, back against the target.
         field("round trip", "%.2e mm from the target"
               % np.linalg.norm(res["T"][:3, 3] - pose[:3]))
         if not res["success"]:
             field("settled at", "pos %8.3f %8.3f %8.3f mm" % tuple(res["T"][:3, 3]))
-            progress("NOT CONVERGED: the damping ceiling was reached, so the")
-            progress("residual settled on the nearest pose this start can get to,")
-            progress("not on the target. The flange position above is what")
-            progress("Table 2 asks you to record.")
+            progress("NOT CONVERGED: the flange settled away from the target.")
     else:
-        # Task 1(c): build a target out of a set of joint readings with the FK,
-        # then stand the residual at those same readings. A correct residual is
-        # zero there, because the arm is already exactly where that q puts it.
+        # Task 1(c): target built from a joint set with the FK, residual stood
+        # at those same readings. A correct residual is zero there.
         q_check = np.array(IK_CHECK_JOINTS_DEG, dtype=float)
         T_target = fk_from_zeta(np.deg2rad(q_check), ZETA_NOMINAL)
-        e = ik_residual(q_check, T_target)
+        e_zero = ik_residual(q_check, T_target)
+
+        # Verification
+        T_target_v = fk_from_zeta(np.deg2rad(q_check+10), ZETA_NOMINAL)
+        e_verification = ik_residual(q_check, T_target_v)
+
 
         banner("IK RESIDUAL SELF-CHECK")
         field("q (deg)", " ".join("%7.2f" % v for v in q_check))
         field("target", "flange at %8.3f %8.3f %8.3f mm" % tuple(T_target[:3, 3]))
-        field("e (mm, deg)", "[" + "  ".join("%9.4f" % v for v in e) + "]")
-        field("||e||", "%.2e  <- this must be zero" % np.linalg.norm(e))
+        field("e (mm, deg)", "[" + "  ".join("%9.4f" % v for v in e_zero) + "]")
+        field("||e||", "%.2e  (must be zero)" % np.linalg.norm(e_zero))
+
+        banner("IK VERIFICATION SELF-CHECK")
+        field("q (deg)", " ".join("%7.2f" % v for v in q_check))
+        field("target", "flange at %8.3f %8.3f %8.3f mm" % tuple(T_target_v[:3, 3]))
+        field("e (mm, deg)", "[" + "  ".join("%9.4f" % v for v in e_verification) + "]")
+        field("||e||", "%.2e  (must be ~72.6mm)" % np.linalg.norm(e_verification))
+
         print()
-        if np.linalg.norm(e) < 1e-9:
-            print("  The residual is doing what it is meant to. Task 1(d) runs")
-            print("  Table 1's pose from each guess: the pose, then q1..q6, on")
-            print("  the command line, one run per guess.")
+        if np.linalg.norm(e_zero) < 1e-9 and abs(np.linalg.norm(e_verification) - 72.6)  < 1e-1:
+            print("  All checks OK")
         else:
-            print("  Not zero. Re-read the two comments in ik_residual and try again.")
+           print("  Check residual - it is wrong")

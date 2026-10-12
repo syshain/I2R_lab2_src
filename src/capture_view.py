@@ -69,7 +69,7 @@ def capture_loop(detector, on_capture, max_poses=None, window="Capture",
                       (255, 255, 0)))
         lines.append((hint, (255, 255, 0)))
         for row, (text, colour) in enumerate(lines):
-            cv2.putText(frame, text, (10, 30 + 30 * row),
+            cv2.putText(frame, str(text), (10, 30 + 30 * row),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, colour, 2, cv2.LINE_AA)
 
         cv2.imshow(window, frame)
