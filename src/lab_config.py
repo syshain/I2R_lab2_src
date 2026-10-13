@@ -12,7 +12,7 @@ import numpy as np
 # =============================================================================
 
 ROBOT_IP = os.environ.get("ROBOT_IP", "192.168.1.158")
-CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "0"))
+CAMERA_INDEX = int(os.environ.get("CAMERA_INDEX", "4"))
 FRAME_WIDTH = 1920
 FRAME_HEIGHT = 1080
 

@@ -101,8 +101,7 @@ def run_stage2(Q, TCW_list, zeta_nominal, w_rows, n=6, locked=None,
     zeta[free_idx] += fit['xi'][:n_free]
     t6c = fit['xi'][n_free:]
 
-    # Proof the lock held, read off the answer rather than the setup: the locked
-    # entries of the returned table must be nominal to the last bit.
+    # The locked entries of the returned table must equal nominal exactly.
     lock_err = (float(np.max(np.abs(zeta[lock_idx] - zeta0[lock_idx])))
                 if len(lock_idx) else 0.0)
 

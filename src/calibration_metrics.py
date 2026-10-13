@@ -1,11 +1,7 @@
-"""Scoring: how consistent a calibration is, and how two calibrations differ.
-
-s_max is self-consistency, not accuracy: any constant error in the chain is invisible to it.
-"""
+"""Scoring: how consistent a calibration is, and how two calibrations differ."""
 
 import numpy as np
 
-import lab_config as C
 from calibration_model import predict_all_T0W, predict_all_T0W_from_flange
 from fk_lite6 import fk_from_zeta_batch
 from so3 import rotation_log_map, t6c_from_vec
@@ -42,26 +38,13 @@ def compute_T0W_stats_from_flange(T_0_6_all, TCW_list, t6c_vec):
 
 
 def artifact_displacement(T_0_6_before, TCW_before, T_0_6_after, TCW_after, t6c_vec):
-    """Mean W position in two captures and the distance between them.
-
-    Through the T_0_6 passed in, so with the controller's no DH table takes part.
-    """
+    """Mean W position in two captures and the distance between them, chained
+    through the T_0_6 passed in."""
 
     before = predict_all_T0W_from_flange(T_0_6_before, TCW_before, t6c_vec)
     after = predict_all_T0W_from_flange(T_0_6_after, TCW_after, t6c_vec)
     b, a = before[:, :3, 3].mean(axis=0), after[:, :3, 3].mean(axis=0)
     return {'before_mm': b, 'after_mm': a, 'moved_mm': float(np.linalg.norm(a - b))}
-
-
-def quality_grade(s_max_mm):
-    """Lab 1 band for an s_max figure: EXCELLENT / GOOD / ACCEPTABLE / POOR."""
-    if s_max_mm < C.S_MAX_EXCELLENT_MM:
-        return "EXCELLENT"
-    if s_max_mm < C.S_MAX_GOOD_MM:
-        return "GOOD"
-    if s_max_mm < C.S_MAX_ACCEPTABLE_MM:
-        return "ACCEPTABLE"
-    return "POOR"
 
 
 def fk_vs_reference_rmse(Q, T_ref_list, zeta, n=6):

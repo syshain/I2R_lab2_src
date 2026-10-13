@@ -59,15 +59,6 @@ def reprojection_errors(objp, image_points, rvecs, tvecs, K, dist):
     return np.array(out, dtype=float)
 
 
-def rms_grade(rms):
-    """Handout section 6.3 bands for the reprojection RMS, px."""
-    if rms < C.CAM_CALIB_RMS_GOOD_TARGET_PX:
-        return "EXCELLENT"
-    if rms < C.CAM_CALIB_RMS_RECAPTURE_PX:
-        return "GOOD"
-    return "RETAKE - above %.1f px" % C.CAM_CALIB_RMS_RECAPTURE_PX
-
-
 def write_reports(found, objp, rvecs, tvecs, K, dist):
     """Detected corners in green, reprojected in red, into data/camera_report."""
     out_dir = C.data_path(C.CAMERA_REPORT_FOLDER)
@@ -102,7 +93,7 @@ def save_all(K, dist, rms, found, per_view, image_size, n_read):
               % (C.CHESSBOARD_SIZE[0], C.CHESSBOARD_SIZE[1], C.SQUARE_SIZE_MM)]
     lines += ["views used      %d of %d read" % (len(found), n_read)]
     lines += ["image size      %d x %d px" % image_size]
-    lines += ["reprojection    %.3f px RMS  (%s)" % (rms, rms_grade(rms))]
+    lines += ["reprojection    %.3f px RMS" % rms]
     lines += ["", "camera matrix K"]
     lines += ["  [%10.3f %10.3f %10.3f]" % tuple(row) for row in K]
     lines += ["", "distortion (k1 k2 p1 p2 k3)"]
@@ -132,11 +123,9 @@ def main():
     found = find_boards(paths)
     progress("full board located in %d of %d views" % (len(found), len(paths)))
     if len(found) < C.CAM_CALIB_MIN_GOOD_IMAGES:
-        progress("STOP: handout section 6.3 needs %d or more usable views and"
-                 % C.CAM_CALIB_MIN_GOOD_IMAGES)
-        progress("%d were found. Run image_capture.py again to add views --"
-                 % len(found))
-        progress("earlier ones are kept -- then re-run this script.")
+        progress("STOP: %d usable views found, %d required (handout section 6.3)."
+                 % (len(found), C.CAM_CALIB_MIN_GOOD_IMAGES))
+        progress("Run image_capture.py to add views, then re-run this script.")
         return
 
     sizes = [shape for _, _, shape in found]
@@ -154,11 +143,7 @@ def main():
     per_view = reprojection_errors(objp, image_points, rvecs, tvecs, K, dist)
 
     field("fitted", "%d views" % len(found))
-    field("RMS", "%.3f px" % rms, rms_grade(rms))
-    worst = int(np.argmax(per_view[:, 0]))
-    if per_view[worst, 0] > C.CAM_CALIB_RMS_RECAPTURE_PX:
-        progress("worst view %s at %.2f px mean -- retake that one if you can"
-                 % (os.path.basename(found[worst][0]), per_view[worst, 0]))
+    field("RMS", "%.3f px" % rms)
     print()
     for row in K:
         field("K", "[ %10.3f %10.3f %10.3f ]" % tuple(row))

@@ -12,8 +12,7 @@ Blind to what the parameters mean; every tunable comes from lab_config; silent u
 # the loop walks downhill only if J carries the explicit one. Hand it a plain
 # +dr/dxi and every trial step points uphill: each is rejected, lam triples,
 # and it exits on iteration 1 with zero parameter movement. That reads like an
-# ill-conditioned problem, not a sign error, which is how this very fit
-# came to stall once before.
+# ill-conditioned problem, not a sign error.
 #
 # calibration_model satisfies it the same way everywhere: the residual is
 # built as r = ref - cur and the finite difference is taken on (cur - ref).

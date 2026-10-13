@@ -15,17 +15,6 @@ from reporting import (banner, consistency_lines, field, format_results_txt,
                        print_stats_block, progress)
 from run_stages import TITLES, run_stage1, run_stage2, run_stage_f
 
-# Row label -> (key slug for the results dict, short name for the console).
-GAIN_NAMES = {'Stage F controller FK': ('stagef', 'Stage F'),
-              'Stage 2 DH + HE': ('stage2', 'Stage 2')}
-
-
-def improvement_vs_stage1(s1_stats, rows):
-    """Handout section 6.6: the percentage by which each stage cut Stage 1's s_max."""
-    base = s1_stats['s_max_mm']
-    return [(label, 100.0 * (base - stats['s_max_mm']) / base)
-            for label, stats in rows]
-
 
 def main():
     """Fit all three stages on the stored capture; print them and write the results."""
@@ -43,24 +32,19 @@ def main():
     baseline_stats = compute_T0W_stats(Q, TCW_list, np.concatenate([zeta, np.zeros(6)]), n)
     print_stats_block("BASELINE: nominal DH, T_6_C = I, nothing fitted", baseline_stats)
 
-    # The reference Stage F is fitted against, and the gap our own model sits in.
     fk_ref = None
     if cap.T_0_6_controller is not None:
         fk_ref = fk_vs_reference_rmse(Q, cap.T_0_6_controller, zeta, n)
-        heading("MODEL DISAGREEMENT: our FK against the controller's T_0_6")
+        heading("NOMINAL-DH FK VS CONTROLLER T_0_6")
         field("RMSE", "%.3f mm" % fk_ref['rmse_mm'])
-        field("pose-dep", "%.3f mm" % fk_ref['pos_std_mm'],
-              "what a hand-eye fit cannot absorb")
+        field("pose-dep", "%.3f mm" % fk_ref['pos_std_mm'])
         field("orientation", "%.2f deg mean, %.2f deg max"
               % (fk_ref['ori_mean_deg'], fk_ref['ori_max_deg']))
-        progress("two models disagreeing is not an error: the controller was factory")
-        progress("calibrated, this table is the drawing. Only the pose-dependent")
-        progress("part above can move s_max.")
         print()
 
     banner(TITLES['stage1'])
     s1 = run_stage1(Q, TCW_list, zeta, w_rows, n)
-    print_stats_block("Stage 1 consistency over the poses it was fitted on", s1.stats)
+    print_stats_block("Stage 1, over the poses it was fitted on", s1.stats)
 
     sf = None
     if cap.T_0_6_controller is None:
@@ -69,36 +53,26 @@ def main():
     else:
         banner(TITLES['stagef'])
         sf = run_stage_f(cap.T_0_6_controller, Q, TCW_list, zeta, w_rows, n)
-        # Two scores for one answer. The controller FK is the model it was fitted
-        # in; the nominal-DH score charges it kinematic error it was never given.
-        print_stats_block("Stage F through the controller FK it was fitted against",
+        print_stats_block("Stage F scored through the controller FK",
                           sf.extra['stats_controller'])
-        print_stats_block("The same T_6_C through our nominal-DH FK (its error included)",
+        print_stats_block("Stage F T_6_C scored through the nominal-DH FK",
                           sf.stats)
 
     banner(TITLES['stage2'])
     s2 = run_stage2(Q, TCW_list, zeta, w_rows, n, t6c_seed=s1.t6c)
-    print_stats_block("Stage 2 consistency over the poses it was fitted on", s2.stats)
+    print_stats_block("Stage 2, over the poses it was fitted on", s2.stats)
     print_dh_table(s2.zeta, n, compare_to=zeta, free=set(s2.free_idx.tolist()))
 
     rows = [("Baseline", baseline_stats), ("Stage 1 hand-eye", s1.stats)]
     if sf is not None:
         rows.append(("Stage F controller FK", sf.extra['stats_controller']))
     rows.append(("Stage 2 DH + HE", s2.stats))
-    print_comparison_table(rows, "ALL CALIBRATIONS COMPARED (best s_max first)")
+    print_comparison_table(rows, "ALL CALIBRATIONS COMPARED")
 
-    # The rows after Stage 1, scored the way each stage's own model scores it.
-    gains = improvement_vs_stage1(s1.stats, rows[2:])
-    heading("Improvement over Stage 1 (handout section 6.6)")
-    for label, pct in gains:
-        field(GAIN_NAMES[label][1], "%+.1f %%" % pct,
-              "cut in s_max against Stage 1's %.3f mm" % s1.stats['s_max_mm'])
-    print()
-
-    return save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows, gains)
+    return save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows)
 
 
-def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows, gains):
+def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows):
     """Write the results three ways: .npy for code, .json and .txt for reading."""
     n = cap.n
     results = {
@@ -127,14 +101,9 @@ def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows, gains):
             dt, dr = t6c_difference(sf.t6c, other.t6c)
             results['t6c_stagef_vs_%s_mm' % label] = dt
             results['t6c_stagef_vs_%s_deg' % label] = dr
-    for label, pct in gains:
-        slug, _ = GAIN_NAMES[label]
-        results['improvement_%s_vs_stage1_pct' % slug] = pct
-
     context = {'n_joints': n, 'n_poses': len(cap.Q), 'data_file': cap.path,
                'zeta_nominal': cap.zeta_nominal, 'fk_vs_controller': fk_ref,
                'baseline_stats': baseline_stats, 'summary_rows': rows,
-               'gains': gains,
                'weight_position': C.WEIGHT_POSITION,
                'weight_orientation': C.WEIGHT_ORIENTATION}
     stages = [
@@ -147,7 +116,7 @@ def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows, gains):
                        'iters': sf.iters, 'converged': sf.converged,
                        'status': sf.status,
                        'extra_lines': [
-                           ["-- The same T_6_C scored through our nominal-DH FK --"]
+                           ["-- The same T_6_C scored through the nominal-DH FK --"]
                            + consistency_lines(sf.stats)]})
     stages.append(
         {'title': TITLES['stage2'], 'stats': s2.stats, 't6c': s2.t6c,

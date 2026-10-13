@@ -10,7 +10,6 @@ The grammar itself, which is what the reader needs, is spelled out below.
 
 import numpy as np
 
-from calibration_metrics import quality_grade
 from fk_lite6 import dh_param_names, unit_of
 from units import euler_deg_from_matrix
 from so3 import t6c_from_vec
@@ -45,8 +44,7 @@ def print_stats_block(label, stats):
     """Print one consistency measurement: per-axis spread, worst axis, worst error."""
     heading(label)
     field("Pos std", "X=%.3f  Y=%.3f  Z=%.3f mm" % tuple(stats['pos_axis_std_mm']))
-    field("s_max", "%.3f mm (%s axis)" % (stats['s_max_mm'], stats['s_max_axis']),
-          quality_grade(stats['s_max_mm']))
+    field("s_max", "%.3f mm (%s axis)" % (stats['s_max_mm'], stats['s_max_axis']))
     field("Trans max", "%.3f mm" % stats['trans_max_mm'])
     field("Ori", "mean %.3f deg  max %.3f deg"
           % (stats['ori_mean_deg'], stats['ori_max_deg']))
@@ -54,21 +52,21 @@ def print_stats_block(label, stats):
 
 
 def comparison_lines(rows, title="COMPARISON TABLE", width=None):
-    """The ranking to read off: rows of (label, stats), best s_max first."""
+    """One line per (label, stats) row, in the order given."""
     width = max(width or 0, 15, max(len(label) for label, _ in rows))
     lines = [title, "",
-             "%-*s %12s %12s %12s %12s"
-             % (width, "Method", "s_max (mm)", "TransMax", "OriMax (deg)", "Grade")]
-    for label, stats in sorted(rows, key=lambda r: r[1]['s_max_mm']):
-        lines.append("%-*s %12.3f %12.3f %12.3f %12s"
+             "%-*s %12s %12s %12s"
+             % (width, "Method", "s_max (mm)", "TransMax", "OriMax (deg)")]
+    for label, stats in rows:
+        lines.append("%-*s %12.3f %12.3f %12.3f"
                      % (width, label, stats['s_max_mm'], stats['trans_max_mm'],
-                        stats['ori_max_deg'], quality_grade(stats['s_max_mm'])))
+                        stats['ori_max_deg']))
     lines.append("")
     return lines
 
 
-def print_comparison_table(rows, title="FINAL COMPARISON"):
-    """Print the stage ranking, best s_max first."""
+def print_comparison_table(rows, title="COMPARISON"):
+    """Print the comparison table."""
     for line in comparison_lines(rows, title):
         print(line)
 
@@ -90,8 +88,8 @@ def consistency_lines(stats):
     """The consistency block of one stage, as report lines."""
     return [
         "  Pos std       : X=%.4f  Y=%.4f  Z=%.4f mm" % tuple(stats['pos_axis_std_mm']),
-        "  s_max         : %.4f mm (%s axis)  [%s]"
-        % (stats['s_max_mm'], stats['s_max_axis'], quality_grade(stats['s_max_mm'])),
+        "  s_max         : %.4f mm (%s axis)"
+        % (stats['s_max_mm'], stats['s_max_axis']),
         "  Trans max     : %.4f mm" % stats['trans_max_mm'],
         "  Orientation   : mean %.4f deg, max %.4f deg"
         % (stats['ori_mean_deg'], stats['ori_max_deg']),
@@ -142,15 +140,6 @@ def print_dh_table(zeta, n, title="DH parameters (angles in degrees)", **kwargs)
     print()
 
 
-def validation_gain_lines(candidates, width=26):
-    """Fitted-vs-hold-out rows as report lines; positive means worse than it looked."""
-    return ["  %-*s fitted %8.3f mm   hold-out %8.3f mm   (%+7.3f)"
-            % (width, cand['label'], cand['fitted_s_max_mm'],
-               cand['stats']['s_max_mm'],
-               cand['stats']['s_max_mm'] - cand['fitted_s_max_mm'])
-            for cand in candidates]
-
-
 def format_results_txt(context, stages):
     """The whole calibration report as one string.
 
@@ -172,14 +161,10 @@ def format_results_txt(context, stages):
     ]
     if fk is not None:
         L += [
-            "-- Model disagreement (a difference of models, not an error) --",
-            "  Our nominal-DH FK vs the controller's own T_0_6, over these poses:",
+            "-- Nominal-DH FK vs controller T_0_6, over these poses --",
             "  RMSE %.3f mm, pose-dependent part %.3f mm, orientation %.2f deg mean"
             " / %.2f deg max" % (fk['rmse_mm'], fk['pos_std_mm'],
                                  fk['ori_mean_deg'], fk['ori_max_deg']),
-            "  Any constant part of that is absorbed by the hand-eye fit, so s_max",
-            "  would not move if it were removed. The pose-dependent part is what",
-            "  Stages 2 and F are able to remove.",
             "",
         ]
     L += [
@@ -202,24 +187,6 @@ def format_results_txt(context, stages):
             L += block
 
     L += comparison_lines(context['summary_rows'])
-    gains = context.get('gains') or []
-    if gains:
-        s1_row = dict(context['summary_rows']).get('Stage 1 hand-eye')
-        L += ["-- Improvement over Stage 1 (handout section 6.6) --"]
-        for label, pct in gains:
-            L.append("  %-24s %+7.1f %%   (against Stage 1 s_max %.3f mm)"
-                     % (label, pct, s1_row['s_max_mm']))
-        L += [""]
-    L += [
-        "s_max is the largest per-axis standard deviation of T_0_W over the poses",
-        "used to fit it. It measures self-consistency, not accuracy: a constant error",
-        "anywhere in the chain is invisible to it, because a constant is exactly what",
-        "fitting T_6_C absorbs. Stage F has a sharper check available -- its own",
-        "forward model against the controller's T_0_6 at the same poses, a difference",
-        "that cannot hide inside T_6_C -- and both are tested on relocated markers by",
-        "validate_calibration.py, which is the test that measures accuracy.",
-        "",
-    ]
     return "\n".join(L)
 
 
@@ -235,10 +202,6 @@ def format_validation_txt(context, candidates):
         "Hold-out capture      : %s" % context['validation_file'],
         "Hold-out poses        : %d   Joint groups: %d" % (context['n_poses'], n),
         "",
-        "Nothing is fitted here. Every calibration below is frozen and scored on",
-        "poses it never saw, with the artifact in a place it was not in when they",
-        "were fitted.",
-        "",
     ]
 
     moved = context.get('displacement')
@@ -247,9 +210,8 @@ def format_validation_txt(context, candidates):
             "-- The artifact moved --",
             "  W was (%9.2f, %9.2f, %9.2f) mm, now (%9.2f, %9.2f, %9.2f) mm"
             % (*moved['before_mm'], *moved['after_mm']),
-            "  %.1f mm apart, chained through the controller's own T_0_6 and %s,"
+            "  %.1f mm apart, chained through the controller's T_0_6 and %s."
             % (moved['moved_mm'], context.get('move_t6c', 'a fitted T_6_C')),
-            "  so no DH table takes any part in the measurement.",
             "",
         ]
 
@@ -264,19 +226,5 @@ def format_validation_txt(context, candidates):
                                 free=cand.get('free'))
 
     L += comparison_lines([(c['label'], c['stats']) for c in candidates],
-                          "VALIDATION COMPARISON (best s_max first)")
-
-    scored = [c for c in candidates if c.get('fitted_s_max_mm') is not None]
-    if scored:
-        L += ["", "-- Same calibrations, measured twice --"]
-        L += validation_gain_lines(scored)
-        L += ["",
-              "The fitted column is s_max over the poses a stage was optimised on,",
-              "the hold-out column over poses of a moved artifact. A stage that got",
-              "its low s_max by absorbing the first artifact's noise rather than by",
-              "modelling the arm gets a large gap here; a stage that genuinely",
-              "improved the model keeps its lead. Hold-out s_max is still",
-              "self-consistency, not accuracy: relocating the artifact removes the",
-              "evidence a fit could overfit, it does not add a ground truth.",
-              ""]
+                          "VALIDATION COMPARISON")
     return "\n".join(L)

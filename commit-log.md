@@ -1,3 +1,7 @@
+# v1.4 - Minor fixes
+## 13 Oct 2026
+- Minor fixes - grades missing but not needed - removed 
+
 # v1.3 - Dry run fixes
 ## 12 Oct 2026
 - Changed ik_lite self-check to a more robust verification

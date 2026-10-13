@@ -17,8 +17,7 @@ from calibration_metrics import (artifact_displacement, compute_T0W_stats,
 from capture_view import capture_loop
 from collect_data import record_pose
 from reporting import (banner, field, format_validation_txt, heading,
-                       print_comparison_table, print_stats_block, progress,
-                       validation_gain_lines)
+                       print_comparison_table, print_stats_block, progress)
 from robot import connect, disconnect
 
 
@@ -73,23 +72,22 @@ def build_candidates(results, cap):
 
     candidates = [
         {'label': 'Baseline, nothing fitted', 'zeta': zeta_nominal,
-         't6c': np.zeros(6), 'fitted_key': 'baseline_stats'},
+         't6c': np.zeros(6)},
         {'label': 'Stage 1 hand-eye', 'zeta': zeta_nominal,
-         't6c': results['t6c_stage1'], 'fitted_key': 'stage1_stats'},
+         't6c': results['t6c_stage1']},
         {'label': 'Stage 2 DH + hand-eye', 'zeta': results['zeta_stage2'],
-         't6c': results['t6c_stage2'], 'fitted_key': 'stage2_stats',
+         't6c': results['t6c_stage2'],
          'free': set(np.asarray(results['stage2_free_idx']).tolist())},
     ]
 
-    # Stage F was fitted inside the controller's own kinematics, so it is scored
-    # both ways: there, and through our nominal DH as a comparison.
+    # Stage F was fitted inside the controller's kinematics; scored both ways.
     t6cf = results.get('t6c_stagef')
     if t6cf is not None and cap.T_0_6_controller is not None:
         candidates += [
             {'label': 'Stage F, controller FK', 't6c': t6cf,
-             'through': 'controller', 'fitted_key': 'stagef_stats_controller'},
+             'through': 'controller'},
             {'label': 'Stage F, nominal DH FK', 'zeta': zeta_nominal,
-             't6c': t6cf, 'fitted_key': 'stagef_stats'},
+             't6c': t6cf},
         ]
     return candidates
 
@@ -126,11 +124,9 @@ def report_artifact_move(cap, t6c_named):
     field("W before", "(%8.2f, %8.2f, %9.2f) mm" % tuple(moved['before_mm']))
     field("W after", "(%8.2f, %8.2f, %9.2f) mm" % tuple(moved['after_mm']))
     field("moved", "%.1f mm" % moved['moved_mm'],
-          "controller T_0_6 and %s only, so no DH table takes part" % t6c_named[0])
+          "via controller T_0_6 and %s" % t6c_named[0])
     if moved['moved_mm'] < C.VALIDATION_MIN_MOVE_MM:
-        field("WARNING", "that is barely a move",
-              "relocate it %d mm or more and re-run; this tests little"
-              % C.VALIDATION_MIN_MOVE_MM)
+        field("note", "move is under %d mm" % C.VALIDATION_MIN_MOVE_MM)
     print()
     return moved
 
@@ -159,10 +155,8 @@ def main(recapture=False):
     candidates = build_candidates(results, cap)
     for candidate in candidates:
         candidate['stats'] = score(candidate, cap)
-        candidate['fitted_s_max_mm'] = (results.get(candidate.pop('fitted_key'))
-                                        or {}).get('s_max_mm')
 
-    # Any fitted T_6_C does for measuring the move; it is physical, so it stays in.
+    # The move is physical; any fitted T_6_C serves to measure it.
     t6c_for_move = (("Stage 1's T_6_C", results['t6c_stage1'])
                     if results.get('t6c_stage1') is not None
                     else ("the identity T_6_C", np.zeros(6)))
@@ -171,14 +165,7 @@ def main(recapture=False):
     for candidate in candidates:
         print_stats_block(candidate['label'], candidate['stats'])
     print_comparison_table([(c['label'], c['stats']) for c in candidates],
-                           "VALIDATION COMPARISON (best s_max first)")
-
-    scored = [c for c in candidates if c['fitted_s_max_mm'] is not None]
-    if scored:
-        heading("Same calibrations, measured twice")
-        for line in validation_gain_lines(scored):
-            print(line)
-        print()
+                           "VALIDATION COMPARISON")
 
     context = {'results_file': results_file, 'validation_file': cap.path,
                'n_poses': len(cap.Q), 'n_joints': cap.n,
@@ -191,9 +178,7 @@ def main(recapture=False):
     save_results_npy(C.data_path(C.VALIDATION_NPY_NAME), {
         'validation_file': cap.path, 'n_poses': len(cap.Q),
         'displacement': moved,
-        's_max_mm': {c['label']: c['stats']['s_max_mm'] for c in candidates},
-        'fitted_s_max_mm': {c['label']: c['fitted_s_max_mm']
-                            for c in candidates}})
+        's_max_mm': {c['label']: c['stats']['s_max_mm'] for c in candidates}})
     for name in (C.VALIDATION_TXT_NAME, C.VALIDATION_NPY_NAME):
         progress("wrote %s" % C.data_path(name))
     return candidates
