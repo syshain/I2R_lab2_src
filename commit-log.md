@@ -1,3 +1,7 @@
+# v2.0 - Robot serial number reporting added
+## 11 Nov 2026
+- Add robot-interfacing programs now record the serial number for hardware uniqueness
+
 # v1.4 - Minor fixes
 ## 13 Oct 2026
 - Minor fixes - grades missing but not needed - removed 

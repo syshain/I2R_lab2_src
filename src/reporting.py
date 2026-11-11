@@ -154,6 +154,7 @@ def format_results_txt(context, stages):
         "=" * 64,
         "",
         "Data            : %s" % context['data_file'],
+        "robot_sn        : %s" % context.get('robot_sn', 'not recorded'),
         "Poses           : %d   Joint groups: %d" % (context['n_poses'], n),
         "Weights         : position=%.2f  orientation=%.2f"
         % (context['weight_position'], context['weight_orientation']),

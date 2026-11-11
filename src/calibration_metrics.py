@@ -15,7 +15,9 @@ def stats_from_T0W(T0W):
     R0 = T0W[0, :3, :3]
     rel_ang = np.array([np.linalg.norm(rotation_log_map(R0.T @ T0W[i, :3, :3]))
                         for i in range(T0W.shape[0])])
-    std = pos.std(axis=0, ddof=0)
+    # Sample std (n-1), matching the handout formula ("as in Laboratory 1
+    # Task 4") and Lab 1's validate_calibration.py.
+    std = pos.std(axis=0, ddof=1)
 
     return {
         'pos_axis_std_mm': std,
@@ -59,7 +61,7 @@ def fk_vs_reference_rmse(Q, T_ref_list, zeta, n=6):
 
     return {
         'rmse_mm': float(np.sqrt((dp ** 2).sum(axis=1).mean())),
-        'pos_std_mm': float(dp.std(axis=0, ddof=0).max()),
+        'pos_std_mm': float(dp.std(axis=0, ddof=1).max()),
         'ori_mean_deg': float(np.rad2deg(dq.mean())),
         'ori_max_deg': float(np.rad2deg(dq.max())),
     }

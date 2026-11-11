@@ -11,7 +11,7 @@ from calibration_io import load_camera_intrinsics, save_capture
 from capture_view import capture_loop
 from fk_lite6 import fk_from_zeta
 from reporting import banner, field, progress
-from robot import connect, disconnect, flange_pose, joint_angles
+from robot import connect, disconnect, flange_pose, joint_angles, robot_sn
 
 
 def record_pose(arm, detection, records, zeta_nominal, n=C.N_DOF):
@@ -48,9 +48,11 @@ def main(path=None):
     K, dist = load_camera_intrinsics()
     detector = ArucoArtifactDetector(K=K, dist=dist)
     arm = connect()
+    sn = robot_sn(arm)
 
     banner("Collect hand-eye data")
     field("arm", C.ROBOT_IP)
+    field("robot_sn", sn)
     field("camera", "%d (%d x %d)"
           % (detector.camera_index, C.FRAME_WIDTH, C.FRAME_HEIGHT))
     field("output", path)
@@ -73,7 +75,7 @@ def main(path=None):
         detector.close()
         disconnect(arm)
 
-    saved = save_capture(path, records, zeta_nominal, n)
+    saved = save_capture(path, records, zeta_nominal, n, robot_sn=sn)
     banner("Capture %s" % ("saved" if saved else "discarded"))
     field("file", path)
     field("poses", len(records))

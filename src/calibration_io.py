@@ -26,6 +26,7 @@ class CaptureSet:
     T_0_6_controller: object            # (l, 4, 4) from the controller, or None
     w_rows: np.ndarray                  # (6l,) per-residual-row weights
     reproj_px: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    robot_sn: str = 'not recorded'
 
 
 def _zeta_from_capture(data, n):
@@ -78,10 +79,12 @@ def load_calibration_data(path=None):
         T_0_6_controller=T_0_6_controller,
         w_rows=build_weight_vector(len(Q)),
         reproj_px=np.asarray([p.get('reproj_error_px', 0.0) for p in poses],
-                             dtype=float))
+                             dtype=float),
+        robot_sn=str(data.get('robot_sn', 'not recorded')))
 
 
-def save_capture(path, poses, zeta_nominal, n=C.N_DOF, min_poses=None):
+def save_capture(path, poses, zeta_nominal, n=C.N_DOF, min_poses=None,
+                 robot_sn='not recorded'):
     """Write a capture in the one on-disk format -> ok; too-short ones are discarded."""
     poses = list(poses)
     floor = C.CAPTURE_MIN_POSES if min_poses is None else min_poses
@@ -90,7 +93,8 @@ def save_capture(path, poses, zeta_nominal, n=C.N_DOF, min_poses=None):
                  "was written over %s" % (len(poses), floor, path))
         return False
 
-    np.save(path, {'poses': poses,
+    np.save(path, {'robot_sn': robot_sn,
+                   'poses': poses,
                    'zeta_nominal': np.asarray(zeta_nominal, dtype=float),
                    'n': n}, allow_pickle=True)
     return True

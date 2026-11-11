@@ -76,6 +76,7 @@ def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows):
     """Write the results three ways: .npy for code, .json and .txt for reading."""
     n = cap.n
     results = {
+        'robot_sn': cap.robot_sn,
         'zeta_nominal': cap.zeta_nominal,
         'n_poses': len(cap.Q),
         'baseline_stats': baseline_stats,
@@ -101,7 +102,8 @@ def save_results(cap, baseline_stats, fk_ref, s1, s2, sf, rows):
             dt, dr = t6c_difference(sf.t6c, other.t6c)
             results['t6c_stagef_vs_%s_mm' % label] = dt
             results['t6c_stagef_vs_%s_deg' % label] = dr
-    context = {'n_joints': n, 'n_poses': len(cap.Q), 'data_file': cap.path,
+    context = {'robot_sn': cap.robot_sn,
+               'n_joints': n, 'n_poses': len(cap.Q), 'data_file': cap.path,
                'zeta_nominal': cap.zeta_nominal, 'fk_vs_controller': fk_ref,
                'baseline_stats': baseline_stats, 'summary_rows': rows,
                'weight_position': C.WEIGHT_POSITION,

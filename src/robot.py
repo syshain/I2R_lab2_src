@@ -27,6 +27,20 @@ def disconnect(arm):
     arm.disconnect()
 
 
+def robot_sn(arm):
+    """The robot's serial number, so saved data can be traced back to its bench.
+
+    Returns 'not recorded' rather than raising: a failed SN read must never
+    stop a capture from being saved."""
+    try:
+        code, sn = arm.get_robot_sn()
+        if code == 0 and sn:
+            return str(sn)
+    except Exception:
+        pass
+    return 'not recorded'
+
+
 def joint_angles(arm, n=C.N_DOF):
     """Flange joint angles -> (ok, q radians); a short report is a fault, not angles."""
     code, q = arm.get_servo_angle()
