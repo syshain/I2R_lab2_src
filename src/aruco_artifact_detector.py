@@ -51,8 +51,14 @@ class ArucoArtifactDetector:
         self.camera_index = C.CAMERA_INDEX if camera_index is None else camera_index
         self.config_path = config_path or C.data_path(C.ARUCO_CONFIG_NAME)
         if K is None or dist is None:
-            self.K = np.load(C.data_path(C.CAMERA_MATRIX_NAME))
-            self.dist = np.load(C.data_path(C.DIST_COEFFS_NAME))
+            try:
+                self.K = np.load(C.data_path(C.CAMERA_MATRIX_NAME))
+                self.dist = np.load(C.data_path(C.DIST_COEFFS_NAME))
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(
+                    "No camera calibration in data/ (%s) -- copy your Lab 1 "
+                    "camera_matrix.npy and dist_coeffs.npy into Lab_2/data/ "
+                    "first (or pass K and dist explicitly)." % exc.filename) from exc
         else:
             self.K, self.dist = np.asarray(K, dtype=float), np.asarray(dist, dtype=float)
 

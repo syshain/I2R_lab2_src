@@ -39,10 +39,12 @@ def ik_residual(q_deg, T_target):
     T_cur = fk_from_zeta(np.deg2rad(q_deg), ZETA_NOMINAL)
 
     # --- 1. Position: where the arm is, minus where you want it, in mm ------
-    e_pos = <TO_FILL>
-
+    # e_pos: a 3-vector, current position minus target position (mm).
     # --- 2. Orientation: the rotation that separates the two orientations ---
-    R_err = <TO_FILL>
+    # R_err: the rotation that takes T_cur's orientation to T_target's.
+    raise NotImplementedError(
+        'ik_residual is Task 1(b): compute e_pos and R_err as described above')
+
     e_ori = rotation_vector(R_err)
 
     return np.concatenate([e_pos, e_ori])

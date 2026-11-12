@@ -1,13 +1,18 @@
+## v2.1 - Loader guards + ik_lite6 NotImplementedError stub
+## 12 Nov 2026
+- Camera matrix loads guarded with a "copy your Lab 1 files into Lab_2/data/" message (calibration_io.load_camera_intrinsics, aruco_artifact_detector)
+- <TO_FILL> placeholders in ik_lite6.ik_residual replaced with a NotImplementedError stub; the module imports again
+
 # v2.0 - Robot serial number reporting added
-## 11 Nov 2026
+### 11 Nov 2026
 - Add robot-interfacing programs now record the serial number for hardware uniqueness
 
 # v1.4 - Minor fixes
-## 13 Oct 2026
+### 13 Oct 2026
 - Minor fixes - grades missing but not needed - removed 
 
 # v1.3 - Dry run fixes
-## 12 Oct 2026
+### 12 Oct 2026
 - Changed ik_lite self-check to a more robust verification
 - capture_view.py more robust to pc-dependencies
 - lab_config.py now includes the updated joint angle limits
@@ -15,11 +20,11 @@
     - Fixes dh parameters name sorting issue
 
 # v1.2 - Requirements Corrections
-## 11 Oct 2026
+### 11 Oct 2026
 - Corrected requirements.txt to include precise module versions
 
 # v1.1 - Corrections to v3, theory fixes
-## 10 Oct 2026
+### 10 Oct 2026
 - Removed set mode and state lines from robot.py
 - camera calibration script crash fixed
 - fk_lite6 now can be run standalone
@@ -28,7 +33,7 @@
     - Position error was also mistaken. Fixed both
    
 # v1 - First commit
-## 9 Oct 2026
+### 9 Oct 2026
 ### Working lab 2 code 
 - Inverse kinematics on Python
 - Python based dh optimization 
