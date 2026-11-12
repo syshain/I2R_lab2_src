@@ -1,3 +1,7 @@
+## v2.2 - Camera index for training lab
+## 12 Nov 2026
+- lab_config.py now has camera index default to 0 to work with the training lab computers
+
 ## v2.1 - Loader guards + ik_lite6 NotImplementedError stub
 ## 12 Nov 2026
 - Camera matrix loads guarded with a "copy your Lab 1 files into Lab_2/data/" message (calibration_io.load_camera_intrinsics, aruco_artifact_detector)
