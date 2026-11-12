@@ -28,7 +28,7 @@ ZETA_NOMINAL = build_zeta_nominal(6)
 
 
 # =============================================================================
-# THE RESIDUAL  --  this is the one function you write, Task 1(b)
+# THE RESIDUAL  --  this is the one function you write, Task 1(c)
 # =============================================================================
 
 def ik_residual(q_deg, T_target):
@@ -43,7 +43,7 @@ def ik_residual(q_deg, T_target):
     # --- 2. Orientation: the rotation that separates the two orientations ---
     # R_err: the rotation that takes T_cur's orientation to T_target's.
     raise NotImplementedError(
-        'ik_residual is Task 1(b): compute e_pos and R_err as described above')
+        'ik_residual is Task 1(c): compute e_pos and R_err as described above')
 
     e_ori = rotation_vector(R_err)
 

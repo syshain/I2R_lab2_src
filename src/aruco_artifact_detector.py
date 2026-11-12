@@ -56,9 +56,9 @@ class ArucoArtifactDetector:
                 self.dist = np.load(C.data_path(C.DIST_COEFFS_NAME))
             except FileNotFoundError as exc:
                 raise FileNotFoundError(
-                    "No camera calibration in data/ (%s) -- copy your Lab 1 "
-                    "camera_matrix.npy and dist_coeffs.npy into Lab_2/data/ "
-                    "first (or pass K and dist explicitly)." % exc.filename) from exc
+                    "No camera calibration in data/ (%s) -- run image_capture.py "
+                    "and camera_calibration.py first (handout Section 6.3, Part 1), "
+                    "or pass K and dist explicitly." % exc.filename) from exc
         else:
             self.K, self.dist = np.asarray(K, dtype=float), np.asarray(dist, dtype=float)
 

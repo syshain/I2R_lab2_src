@@ -1,3 +1,9 @@
+## v2.3 - Handout alignment fixes
+## 12 Nov 2026
+- Missing-camera-calibration guidance corrected: now points to image_capture.py + camera_calibration.py (handout Section 6.3, Part 1) instead of copying Lab 1 files (calibration_io, aruco_artifact_detector)
+- ik_lite6.py ik_residual exercise now references handout Task 1(c) (was 1(b))
+- STRUCTURE.md brought in line with the code: Lab_2_src layout, NotImplementedError stub description, five-model validation list, lab_config.data_path(), s_max grade bands removed
+
 ## v2.2 - Camera index for training lab
 ## 12 Nov 2026
 - lab_config.py now has camera index default to 0 to work with the training lab computers

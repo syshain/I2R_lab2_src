@@ -107,14 +107,14 @@ def build_weight_vector(l):
 
 
 def load_camera_intrinsics():
-    """(K, dist) copied from Lab 1's data/; raises with guidance if absent."""
+    """(K, dist) from this session's own camera calibration; raises with guidance if absent."""
     try:
         return (np.load(C.data_path(C.CAMERA_MATRIX_NAME)),
                 np.load(C.data_path(C.DIST_COEFFS_NAME)))
     except FileNotFoundError as exc:
         raise FileNotFoundError(
-            "No camera calibration in data/ (%s) -- copy your Lab 1 "
-            "camera_matrix.npy and dist_coeffs.npy into Lab_2/data/ first."
+            "No camera calibration in data/ (%s) -- run image_capture.py and "
+            "camera_calibration.py first (handout Section 6.3, Part 1)."
             % exc.filename) from exc
 
 
