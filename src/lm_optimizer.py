@@ -122,8 +122,9 @@ def levenberg_marquardt(residual_fn, xi0, w_rows, *, max_iter=C.LM_MAX_ITER,
         # is taken, the new residual.
         r_trial = np.asarray(residual_fn(xt)[0], dtype=float).reshape(-1)
         cn = total_cost(xt, r_cached=r_trial)
+        accepted = cn < c_old
 
-        if cn < c_old:
+        if accepted:
             x = xt
             rw_old = r_trial * w_rows
             c_old = cn
@@ -161,8 +162,12 @@ def levenberg_marquardt(residual_fn, xi0, w_rows, *, max_iter=C.LM_MAX_ITER,
                 progress("converged (||dx|| < tol) at iteration %d" % it)
             break
 
+        # A rejected step leaves the cost unchanged, so rel_drop would be
+        # zero and the stall test would end a solve that has not yet taken
+        # any step: only test for a stall after an accepted step. The flag
+        # is captured above, before the accept branch overwrites c_old.
         rel_drop = (prev_cost - c_old) / (abs(prev_cost) + 1e-15)
-        if rel_drop < C.LM_STALL_REL:
+        if accepted and rel_drop < C.LM_STALL_REL:
             status = 'stalled'
             if verbose:
                 print()

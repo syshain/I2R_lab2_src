@@ -106,8 +106,8 @@ class ArucoArtifactDetector:
         self.cap.release()
 
     def _matched_points(self, corners, ids):
-        """Pooled model and image points for every detected marker we know about."""
-        object_points, image_points, matched = [], [], []
+        """Pooled model/image points and corners for every marker we know about."""
+        object_points, image_points, matched, matched_corners = [], [], [], []
         for i, mid in enumerate(ids):
             model = self.marker_world.get(int(mid))
             if model is None:
@@ -115,10 +115,11 @@ class ArucoArtifactDetector:
             object_points.append(model)
             image_points.append(np.asarray(corners[i][0], dtype=np.float32))
             matched.append(int(mid))
+            matched_corners.append(corners[i])
         if not matched:
-            return None, None, []
+            return None, None, [], []
         return (np.vstack(object_points).astype(np.float32),
-                np.vstack(image_points), matched)
+                np.vstack(image_points), matched, matched_corners)
 
     def detect(self, frame_bgr):
         """Board pose in the camera frame -> Detection with T_C_W (mm) and reproj_px.
@@ -133,8 +134,11 @@ class ArucoArtifactDetector:
         if ids is None or len(ids) == 0:
             return Detection(False, corners=corners, ids=ids)
 
-        object_points, image_points, matched = self._matched_points(
-            corners, ids.flatten())
+        # Only the artifact's markers take part in the pose, so only they
+        # go out: drawDetectedMarkers needs corners and ids to correspond,
+        # and a foreign marker in view must not crash the consumers.
+        object_points, image_points, matched, matched_corners = \
+            self._matched_points(corners, ids.flatten())
         if object_points is None or len(matched) * CORNER_COUNT < MIN_POINTS_FOR_PNP:
             return Detection(False, corners=corners, ids=ids)
 
@@ -146,13 +150,13 @@ class ArucoArtifactDetector:
         reproj_px = float(np.mean(np.linalg.norm(
             projected.reshape(-1, 2) - image_points, axis=1)))
         if reproj_px > C.DETECT_REPROJ_REJECT_PX:
-            return Detection(False, reproj_px=reproj_px, corners=corners,
-                             ids=np.array(matched))
+            return Detection(False, reproj_px=reproj_px,
+                             corners=matched_corners, ids=np.array(matched))
 
         rotation, _ = cv2.Rodrigues(rvec)
         return Detection(True, T_C_W=transform_from_rt(rotation, tvec.ravel()),
                          rvec=rvec, tvec=tvec.ravel(), reproj_px=reproj_px,
-                         corners=corners, ids=np.array(matched))
+                         corners=matched_corners, ids=np.array(matched))
 
     def _solve(self, object_points, image_points):
         """PnP on the pooled points -> (rvec, tvec), either of which is None."""

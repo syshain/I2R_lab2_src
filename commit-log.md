@@ -1,3 +1,9 @@
+## v2.4 - Ferdinando's fix list (items 7-9)
+## 19 Nov 2026
+- lm_optimizer: the stall test now fires only after an accepted step; a rejected first step no longer ends the solve at iteration 1 with calibration_results still written (Stage 2 on Ferdinando's data: 0.63 mm vs 51 mm)
+- aruco_artifact_detector: Detection carries only the matched markers' corners, so corners and ids always correspond and a foreign marker in view cannot crash drawDetectedMarkers
+- capture_view: preview ids line uses np.asarray(...).ravel(); int() on the raw (N, 1) ids array fails under numpy 2
+
 ## v2.3 - Handout alignment fixes
 ## 12 Nov 2026
 - Missing-camera-calibration guidance corrected: now points to image_capture.py + camera_calibration.py (handout Section 6.3, Part 1) instead of copying Lab 1 files (calibration_io, aruco_artifact_detector)

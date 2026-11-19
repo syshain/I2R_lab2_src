@@ -59,7 +59,7 @@ def capture_loop(detector, on_capture, max_poses=None, window="Capture",
         if note:
             lines.append((note, (0, 255, 0) if note_ok else (0, 0, 255)))
         lines.append(("ids: %s   reproj: %s"
-                      % ([int(i) for i in detection.ids]
+                      % ([int(i) for i in np.asarray(detection.ids).ravel()]
                          if detection.ids is not None else [],
                          "%.2f px" % detection.reproj_px
                          if detection.reproj_px is not None else "-"),
