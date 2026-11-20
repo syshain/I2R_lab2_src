@@ -105,7 +105,7 @@ pip install -r requirements.txt
 ```
 The command line should now have `(.venv)` preceding the prompt.
 Once the pip installer finishes, the code is ready to run.
-Open `lab_config.py` and ensure the config parameters are correct. `ROBOT_IP` is found on the control box of the robot (it and `CAMERA_INDEX` can also be exported as environment variables on the bench).
+Open `lab_config.py` and ensure the config parameters are correct. `ROBOT_IP` is found on the label on the back of the robot base (it and `CAMERA_INDEX` can also be exported as environment variables on the bench).
 
 Part A needs neither robot nor camera. Write the two errors in `ik_residual` in `ik_lite6.py` first (handout Task 1(c)), then:
 ```bat
@@ -114,7 +114,7 @@ python.exe src\ik_lite6.py X Y Z R P Y                      # solve one pose (mm
 python.exe src\ik_lite6.py X Y Z R P Y q1 q2 q3 q4 q5 q6    # the same pose, started from these joint angles (degrees)
 ```
 
-Run the Part B stages in order from the repository root (capture frames, estimate intrinsics, record pose pairs, fit all stages offline, then validate — the scripts resolve `data/` themselves, so no need to change directory):
+Copy `camera_matrix.npy` and `dist_coeffs.npy` from your Lab 1 data folder into `data/` first (or calibrate again as in the box in handout Section 6.3, Part 1). Then run the Part B stages in order from the repository root (capture frames, estimate intrinsics, record pose pairs, fit all stages offline, then validate — the scripts resolve `data/` themselves, so no need to change directory):
 
 ```bat
 python.exe src\image_capture.py

@@ -1,3 +1,8 @@
+## v2.5 - Ferdis follow-ups
+## 20 Nov 2026
+- Missing-camera-calibration messages (calibration_io, aruco_artifact_detector) now say to copy camera_matrix.npy and dist_coeffs.npy from the Lab 1 data folder into data/, or calibrate again as in the box in handout Section 6.3, Part 1
+- STRUCTURE.md: the same run order before the Part B stages, and ROBOT_IP is on the label on the back of the robot base (was control box)
+
 ## v2.4 - Ferdis fix list from Nicolos Lab 2 run
 ## 19 Nov 2026
 - lm_optimizer: the stall test now fires only after an accepted step

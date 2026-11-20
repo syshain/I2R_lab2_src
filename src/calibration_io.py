@@ -113,8 +113,9 @@ def load_camera_intrinsics():
                 np.load(C.data_path(C.DIST_COEFFS_NAME)))
     except FileNotFoundError as exc:
         raise FileNotFoundError(
-            "No camera calibration in data/ (%s) -- run image_capture.py and "
-            "camera_calibration.py first (handout Section 6.3, Part 1)."
+            "No camera calibration in data/ (%s) -- copy camera_matrix.npy and "
+            "dist_coeffs.npy from your Lab 1 data folder into data/, or calibrate "
+            "again as in the box in handout Section 6.3, Part 1."
             % exc.filename) from exc
 
 
