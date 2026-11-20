@@ -1,7 +1,9 @@
-## v2.4 - Ferdinando's fix list (items 7-9)
+## v2.4 - Ferdis fix list from Nicolos Lab 2 run
 ## 19 Nov 2026
-- lm_optimizer: the stall test now fires only after an accepted step; a rejected first step no longer ends the solve at iteration 1 with calibration_results still written (Stage 2 on Ferdinando's data: 0.63 mm vs 51 mm)
-- aruco_artifact_detector: Detection carries only the matched markers' corners, so corners and ids always correspond and a foreign marker in view cannot crash drawDetectedMarkers
+- lm_optimizer: the stall test now fires only after an accepted step
+    - Rejected first step no longer ends the solve at iteration 1 with calibration_results still written 
+- aruco_artifact_detector: Detection carries only the matched markers' corners
+    - Corners and ids always correspond and a foreign marker in view cannot crash drawDetectedMarkers
 - capture_view: preview ids line uses np.asarray(...).ravel(); int() on the raw (N, 1) ids array fails under numpy 2
 
 ## v2.3 - Handout alignment fixes
